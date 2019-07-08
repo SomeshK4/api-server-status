@@ -13,7 +13,7 @@ import com.zaxxer.hikari.HikariDataSource;
  */
 public class DatabaseConfiguration {
 	
-	private static String configFile = "db.properties";
+	private static String configFile = "src/main/resources/db.properties";
 	private static HikariConfig config;
     private static HikariDataSource ds;
     
