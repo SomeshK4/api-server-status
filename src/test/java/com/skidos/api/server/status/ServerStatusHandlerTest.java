@@ -9,9 +9,9 @@ import org.junit.Test;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
-import com.skidos.server.status.json.handler.JsonHandler;
 import com.skidos.server.status.lambda.ServerStatusHandler;
-import com.skidos.server.status.model.ServerStatus;
+import com.skidos.server.status.lambda.model.ServerStatusRequest;
+import com.skidos.server.status.lambda.model.ServerStatusResponse;
 
 /**
  * Unit test.
@@ -26,10 +26,16 @@ public class ServerStatusHandlerTest {
 		when(context.getLogger()).thenReturn(lambdaLogger);
 	}
 
+	/**
+	 * Test Handle Request
+	 * @throws Exception
+	 */
 	@Test
 	public void testHandleRequest() throws Exception {
 		ServerStatusHandler helloWorldHandlerHandler = new ServerStatusHandler();
-		ServerStatus serverStatus = JsonHandler.fromJSON(helloWorldHandlerHandler.handleRequest(-1, context));
-		Assert.assertEquals("offline", serverStatus.getStatus());
+		ServerStatusRequest request = new ServerStatusRequest();
+		request.setLanguage("en");
+		ServerStatusResponse serverStatus = helloWorldHandlerHandler.handleRequest(request, context);
+		Assert.assertEquals("online", serverStatus.getStatus());
 	}
 }

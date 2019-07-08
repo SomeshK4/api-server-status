@@ -1,7 +1,6 @@
 package com.skidos.server.status.lambda;
 
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -9,38 +8,38 @@ import java.sql.Statement;
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.skidos.server.status.json.handler.JsonHandler;
-import com.skidos.server.status.model.ServerStatus;
+import com.skidos.server.status.lambda.db.configuration.DatabaseConfiguration;
+import com.skidos.server.status.lambda.model.ServerStatusRequest;
+import com.skidos.server.status.lambda.model.ServerStatusResponse;
+import com.skidos.server.status.lambda.validator.ServerStatusRequestValidator;
 
 /**
- * Hello world!
+ * Handles the request and return the server status as online/offline
  *
  */
-public class ServerStatusHandler implements RequestHandler<Integer, String> {
+public class ServerStatusHandler implements RequestHandler<ServerStatusRequest, ServerStatusResponse> {
+	
+	private static final String DEFAULT_LANGUAGE = "en";
 
-	public String handleRequest(Integer input, Context context) {
+	public ServerStatusResponse handleRequest(ServerStatusRequest statusRequest, Context context) {
 		LambdaLogger logger = context.getLogger();
-        logger.log("Received : " + input);
-        ServerStatus status = new ServerStatus();
-        String json = null;
-        try {
-        	Class.forName("com.mysql.jdbc.Driver");  
-        	Connection con=DriverManager.getConnection("jdbc:mysql://localhost:3306/test","root","root");  
-        	Statement stmt=con.createStatement();  
-        	ResultSet rs=stmt.executeQuery("select * from server_status");  
-        	while(rs.next()) {
-        		status.setStatus(rs.getString("status"));
-        	}
-			json = JsonHandler.toJSON(status);
-		} catch (JsonProcessingException e) {
-			 logger.log("Error while processing json : " + e);
-		} catch (ClassNotFoundException e) {
-			 logger.log("Error while db connection : " + e);
-		} catch (SQLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		String language = DEFAULT_LANGUAGE;
+		if(ServerStatusRequestValidator.validateRequest(statusRequest.getLanguage())) {
+			language = statusRequest.getLanguage();
 		}
-        return json;
+        logger.log("Request received to get the server status corresponding to language  " + language);
+        ServerStatusResponse status = new ServerStatusResponse();
+        status.setStatus("online");
+        try {
+			Connection connection = DatabaseConfiguration.getConnection();
+			Statement stmt = connection.createStatement();
+			ResultSet rs = stmt.executeQuery("Select email from user limit 1");
+			while(rs.next()) {
+				status.setMessage(rs.getString("email"));
+			}
+		} catch (SQLException ex) {
+			logger.log("Error occured while establishing the connection with database "+ex);
+		}
+        return status;
 	}
 }
