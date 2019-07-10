@@ -1,9 +1,9 @@
 package com.skidos.server.status.lambda;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.LambdaLogger;
@@ -29,16 +29,17 @@ public class ServerStatusHandler implements RequestHandler<ServerStatusRequest, 
 		}
         logger.log("Request received to get the server status corresponding to language  " + language);
         ServerStatusResponse status = new ServerStatusResponse();
-        status.setStatus("online");
-        try {
-			Connection connection = DatabaseConfiguration.getConnection();
-			Statement stmt = connection.createStatement();
-			ResultSet rs = stmt.executeQuery("Select email from user limit 1");
+        try (Connection connection = DatabaseConfiguration.getConnection()){
+			PreparedStatement pstmt = connection.prepareStatement("Select Message,Status from ServerStatus where language = ?");
+			pstmt.setString(1, language);
+			ResultSet rs = pstmt.executeQuery();
 			while(rs.next()) {
-				status.setMessage(rs.getString("email"));
+				status.setStatus(rs.getString("Status"));
+				status.setMessage(rs.getString("Message"));
 			}
 		} catch (SQLException ex) {
-			logger.log("Error occured while establishing the connection with database "+ex);
+			logger.log("Error occured while establishing the connection with database " + ex);
+			status.setMessage("Error while getting the status");
 		}
         return status;
 	}
